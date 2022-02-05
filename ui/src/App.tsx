@@ -1,9 +1,20 @@
-import { useState } from 'react'
 import logo from './logo.svg'
 import './App.css'
+import { useDecrementCountMutation, useGetCurrentCountQuery, useIncrementCountMutation } from './services/application'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const { data, isLoading, refetch } = useGetCurrentCountQuery();
+
+  const [incrementCounter] = useIncrementCountMutation();
+  const [decrementCounter] = useDecrementCountMutation();
+
+  const increment = async () => {
+    await incrementCounter().then(() => refetch());
+  }
+
+  const decrement = async () => {
+    await decrementCounter().then(() => refetch());
+  }
 
   return (
     <div className="App">
@@ -11,9 +22,17 @@ function App() {
         <img src={logo} className="App-logo" alt="logo" />
         <p>Hello Vite + React! Vite's so cool!</p>
         <p>
-          <button type="button" onClick={() => setCount((count) => count + 1)}>
-            count is: {count}
-          </button>
+          <div>
+            { isLoading ? "Loading..." : data}
+          </div>
+          <div>
+            <button type="button" onClick={() => increment()}>
+              Increment
+            </button>
+            <button type="button" onClick={() => decrement()}>
+              Decrement
+            </button>
+          </div>
         </p>
         <p>
           Edit <code>App.tsx</code> and save to test HMR updates.
