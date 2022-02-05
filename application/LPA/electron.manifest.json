@@ -1,0 +1,36 @@
+{
+  "executable": "LPA",
+  "splashscreen": {
+    "imageFile": ""
+  },
+  "name": "LPA",
+  "author": "",
+  "aspCoreBackendPort": 47169,
+  "singleInstance": false,
+  "environment": "Production",
+  "build": {
+    "appId": "com.LPA.app",
+    "productName": "LPA",
+    "copyright": "Copyright © 2020",
+    "buildVersion": "1.0.0",
+    "compression": "maximum",
+    "directories": {
+      "output": "../../../bin/Desktop"
+    },
+    "extraResources": [
+      {
+        "from": "./bin",
+        "to": "bin",
+        "filter": [ "**/*" ]
+      }
+    ],
+    "files": [
+      {
+        "from": "./ElectronHostHook/node_modules",
+        "to": "ElectronHostHook/node_modules",
+        "filter": [ "**/*" ]
+      },
+      "**/*"
+    ]
+  }
+}
