@@ -3,37 +3,29 @@ import './App.css'
 import { useDecrementCountMutation, useGetCurrentCountQuery, useIncrementCountMutation } from './services/application'
 
 function App() {
-  const { data, isLoading, refetch } = useGetCurrentCountQuery();
+  const { data, isLoading } = useGetCurrentCountQuery();
 
   const [incrementCounter] = useIncrementCountMutation();
   const [decrementCounter] = useDecrementCountMutation();
-
-  const increment = async () => {
-    await incrementCounter().then(() => refetch());
-  }
-
-  const decrement = async () => {
-    await decrementCounter().then(() => refetch());
-  }
 
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>Hello Vite + React! Vite's so cool!</p>
-        <p>
+        <div>
           <div>
             { isLoading ? "Loading..." : data}
           </div>
           <div>
-            <button type="button" onClick={() => increment()}>
+            <button type="button" onClick={() => incrementCounter()}>
               Increment
             </button>
-            <button type="button" onClick={() => decrement()}>
+            <button type="button" onClick={() => decrementCounter()}>
               Decrement
             </button>
           </div>
-        </p>
+        </div>
         <p>
           Edit <code>App.tsx</code> and save to test HMR updates.
         </p>
