@@ -4,12 +4,16 @@ import './index.css'
 import { Provider } from 'react-redux'
 
 import App from './App'
+import DataInvalidator from "./dataInvalidator";
+
 import { store } from './store'
 
 ReactDOM.render(
   <React.StrictMode> 
     <Provider store={store}>
-      <App />
+      <DataInvalidator>
+        <App />
+      </DataInvalidator>
     </Provider>
   </React.StrictMode>,
   document.getElementById('root')

@@ -1,10 +1,12 @@
 using ElectronNET.API;
+using LPA.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddElectron();
 
 builder.WebHost.UseElectron(args);
 
@@ -36,4 +38,7 @@ app.MapControllerRoute(
 app.MapFallbackToFile("index.html");
 
 Task.Run(async () => await Electron.WindowManager.CreateWindowAsync());
+
+CounterController.StartRandomizeLoop();
+
 app.Run();
