@@ -15,7 +15,7 @@
       "workingDirectory": "."
     },
 
-    "LPA": {
+    "LPA.Server": {
       "commandName": "Project",
       "launchBrowser": false,
       "applicationUrl": "http://localhost:47169",

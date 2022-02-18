@@ -1,5 +1,5 @@
 {
-  "executable": "LPA",
+  "executable": "LPA.Server",
   "splashscreen": {
     "imageFile": ""
   },

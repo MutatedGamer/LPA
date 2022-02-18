@@ -1,20 +1,20 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
-import './index.css'
-import { Provider } from 'react-redux'
+import React from "react";
+import ReactDOM from "react-dom";
+import "./index.css";
+import { Provider } from "react-redux";
 
-import App from './App'
+import App from "./App";
 import DataInvalidator from "./dataInvalidator";
 
-import { store } from './store'
+import { store } from "./store";
 
 ReactDOM.render(
-  <React.StrictMode> 
+  <React.StrictMode>
     <Provider store={store}>
       <DataInvalidator>
         <App />
       </DataInvalidator>
     </Provider>
   </React.StrictMode>,
-  document.getElementById('root')
-)
+  document.getElementById("root")
+);

@@ -1,56 +1,46 @@
-import logo from './logo.svg'
-import './App.css'
-import { useDecrementCountMutation, useGetCurrentCountQuery, useIncrementCountMutation } from './services/application'
+import "./App.css";
+
+import { AvailableTables } from "./AvailableTables";
+import Sessions from "./Sessions";
+import {
+  Box,
+  Container,
+  createTheme,
+  CssBaseline,
+  Grid,
+  Paper,
+  ThemeProvider
+} from "@mui/material";
+
+import Splitter, { SplitDirection } from "@devbookhq/splitter";
+
+const mdTheme = createTheme();
 
 function App() {
-  const { data, isLoading } = useGetCurrentCountQuery();
-
-  const [incrementCounter] = useIncrementCountMutation();
-  const [decrementCounter] = useDecrementCountMutation();
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>Hello Vite + React! Vite's so cool!</p>
-        <div>
-          <div>
-            { isLoading ? "Loading..." : data}
-          </div>
-          <div>
-            <button type="button" onClick={() => incrementCounter()}>
-              Increment
-            </button>
-            <button type="button" onClick={() => decrementCounter()}>
-              Decrement
-            </button>
-          </div>
-        </div>
-        <p>
-          Edit <code>App.tsx</code> and save to test HMR updates.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-          {' | '}
-          <a
-            className="App-link"
-            href="https://vitejs.dev/guide/features.html"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Vite Docs
-          </a>
-        </p>
-      </header>
-    </div>
-  )
+    <ThemeProvider theme={mdTheme}>
+      <Box sx={{ display: "flex", height: "100vh" }}>
+        <CssBaseline />
+        <Box
+          component="main"
+          sx={{
+            backgroundColor: (theme) =>
+              theme.palette.mode === "light"
+                ? theme.palette.grey[100]
+                : theme.palette.grey[900],
+            flexGrow: 1,
+            height: "100vh",
+            overflow: "auto"
+          }}
+        >
+          <Splitter direction={SplitDirection.Horizontal}>
+            <AvailableTables />
+            <Sessions />
+          </Splitter>
+        </Box>
+      </Box>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
