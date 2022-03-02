@@ -7,12 +7,12 @@ namespace LPA.UI.UserInput
     public class UserInput
         : IUserInput
     {
-        public Task<string> GetFile()
+        public Task<string?> GetFile()
         {
             return GetFile(null);
         }
 
-        public async Task<string> GetFile((string name, string[] filters)[]? fileTypeFilters)
+        public async Task<string?> GetFile((string name, string[] filters)[]? fileTypeFilters)
         {
             var result = await Electron.Dialog.ShowOpenDialogAsync(Electron.WindowManager.BrowserWindows.First(), new OpenDialogOptions()
             {
@@ -23,10 +23,10 @@ namespace LPA.UI.UserInput
                 Filters = fileTypeFilters?.Select(filter => new FileFilter() { Name = filter.name, Extensions = filter.filters }).ToArray(),
             });
 
-            return result.First();
+            return result.Any() ? result.First() : null;
         }
 
-        public async Task<string> GetFolder()
+        public async Task<string?> GetFolder()
         {
             var result = await Electron.Dialog.ShowOpenDialogAsync(Electron.WindowManager.BrowserWindows.First(), new OpenDialogOptions()
             {
@@ -36,7 +36,7 @@ namespace LPA.UI.UserInput
                 }
             });
 
-            return result.First();
+            return result.Any() ? result.First() : null;
         }
     }
 }

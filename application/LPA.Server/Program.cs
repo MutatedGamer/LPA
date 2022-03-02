@@ -3,16 +3,20 @@ using ElectronNET.API.Entities;
 using LPA.Application;
 using LPA.Server;
 using LPA.Server.Menus;
+using LPA.UI;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-await Task.Delay(10000);
-
 // Add services to the container.
 builder.Services.AddSingleton<MainMenu, MainMenu>();
+builder.Services.AddSingleton<ILpaWindowManager, LpaWindowManager>();
 
 builder.Services.AddMvc().AddControllersAsServices(ServiceLifetime.Singleton);
 builder.Services.AddElectron();
+
+
+
 LpaApplication.ConfigureServices(args, builder.Host);
 
 builder.WebHost.UseElectron(args);
@@ -28,6 +32,8 @@ builder.Services.AddCors(options =>
                    .AllowAnyMethod();
         });
 });
+
+
 
 var app = builder.Build();
 
@@ -46,8 +52,6 @@ app.MapControllerRoute(
 
 app.MapFallbackToFile("index.html");
 
-
-
 Task.Run(async () =>
 {
     await BootstrapElectron();
@@ -55,25 +59,27 @@ Task.Run(async () =>
 
 async Task BootstrapElectron()
 {
-    var browserWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions
+    var mainWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions
     {
         Show = false,
         Width = 950,
     });
 
-    await browserWindow.WebContents.Session.ClearCacheAsync();
+    app.Services.GetService<ILpaWindowManager>()!.Initialize(mainWindow);
 
-    browserWindow.OnReadyToShow += () =>
+    await mainWindow.WebContents.Session.ClearCacheAsync();
+
+    mainWindow.OnReadyToShow += () =>
     {
         app.Services.GetService<MainMenu>()!.SetMainMenu();
-        browserWindow.Show();
+        mainWindow.Show();
     };
 
-    browserWindow.OnShow += () =>
+    mainWindow.OnShow += async () =>
     {
         if (builder.Environment.IsDevelopment())
         {
-            browserWindow.WebContents.OpenDevTools();
+            mainWindow.WebContents.OpenDevTools();
         }
     };
 }

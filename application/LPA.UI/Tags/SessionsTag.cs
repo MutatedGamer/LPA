@@ -17,6 +17,6 @@
             }
         }
 
-        public string Name => "Sessions";
+        public string Type => "Sessions";
     }
 }

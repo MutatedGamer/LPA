@@ -1,52 +1,51 @@
 ﻿using LPA.Application.Sessions;
+using LPA.UI.ResponseObjects.SessionTables;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LPA.Controllers
 {
     [ApiController]
-    [Route("[controller]/{sessionId}")]
+    [Route("sessions/{sessionId:guid}")]
     public class SessionController : ControllerBase
     {
 
-        private readonly ILogger<SessionController> logger;
         private readonly ISessionsManager sessionsManager;
 
-        public SessionController(ILogger<SessionController> logger, ISessionsManager sessionsManager)
+        public SessionController(ISessionsManager sessionsManager)
         {
-            this.logger = logger;
             this.sessionsManager = sessionsManager;
         }
 
-        [HttpGet("tables")]
-        public async Task<ActionResult> GetTables(string sessionId)
+        [HttpGet("sessionTables")]
+        public async Task<IEnumerable<Guid>> GetSessionTables(Guid sessionId)
         {
-            var id = Guid.Parse(sessionId);
-            var session = await this.sessionsManager.GetSessionAsync(id);
+            var session = await this.sessionsManager.GetSessionAsync(sessionId);
 
-            var result = await session.GetTablesAsync();
-            return Ok(result);
+            return await session.TablesManager.GetSessionTablesAsync();
         }
 
-        [HttpGet("tables/{tableId}/rows")]
-        public async Task<ActionResult> GetTableRows(string sessionId, string tableId)
+        [HttpGet("sessionTableViews")]
+        public async Task<IEnumerable<SessionTableViewIdentifier>> GetSessionTableViews(Guid sessionId)
         {
-            var sessionGuid = Guid.Parse(sessionId);
-            var session = await this.sessionsManager.GetSessionAsync(sessionGuid);
+            var session = await this.sessionsManager.GetSessionAsync(sessionId);
 
-            var tableGuid = Guid.Parse(tableId);
-            var result = await session.GetTableDataAsync(tableGuid);
-            return Ok(result);
-        }
+            var result = new List<SessionTableViewIdentifier>();
 
-        [HttpGet("tables/{tableId}/config")]
-        public async Task<ActionResult> GetTableConfig(string sessionId, string tableId)
-        {
-            var id = Guid.Parse(sessionId);
-            var session = await this.sessionsManager.GetSessionAsync(id);
+            var sessionTables = await session.TablesManager.GetSessionTablesAsync();
+            foreach (var sessionTable in sessionTables)
+            {
+                foreach (var view in await (await session.TablesManager.GetSessionTableAsync(sessionTable)).GetViewsAsync())
+                {
+                    result.Add(
+                        new SessionTableViewIdentifier()
+                        {
+                            SessionTableId = sessionTable,
+                            SessionTableViewId = view.Id,
+                        });
+                }
+            }
 
-            var tableGuid = Guid.Parse(tableId);
-            var result = await session.GetTableConfigAsync(tableGuid);
-            return Ok(result);
+            return result;
         }
     }
 }

@@ -10,6 +10,8 @@ namespace LPA.UI.Tags
             {
                 case IStandardTag standardTag:
                     return InvalidateStandardTag(standardTag);
+                case ITagWithId tagWithId:
+                    return InvalidateTagWithId(tagWithId);
                 default:
                     return false;
             }
@@ -17,19 +19,25 @@ namespace LPA.UI.Tags
 
         private static bool InvalidateStandardTag(IStandardTag standardTag)
         {
-            if (!Electron.WindowManager.BrowserWindows.Any())
-            {
-                return false;
-            }
-
-            var window = Electron.WindowManager.BrowserWindows.First();
-
-            Electron.IpcMain.Send(
-                    window,
-                    "invalidate",
-                    standardTag.Name);
-
+            SendToAllWindows("invalidate", standardTag);
             return true;
+        }
+
+        private static bool InvalidateTagWithId(ITagWithId tagWithId)
+        {
+            SendToAllWindows("invalidate", tagWithId);
+            return true;
+        }
+
+        private static void SendToAllWindows(string channel, params object[] data)
+        {
+            foreach (var window in Electron.WindowManager.BrowserWindows)
+            {
+                Electron.IpcMain.Send(
+                    window,
+                    channel,
+                    data);
+            }
         }
     }
 }

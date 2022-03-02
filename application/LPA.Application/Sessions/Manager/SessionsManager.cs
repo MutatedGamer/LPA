@@ -8,10 +8,10 @@ namespace LPA.Application.Sessions
     {
         private readonly Dictionary<Guid, ISession> sessions = new();
 
-        public Task<Guid> CreateSessionAsync(ISessionProvider provider)
+        public async Task<Guid> CreateSessionAsync(ISessionProvider provider)
         {
             var guid = Guid.NewGuid();
-            var session = new Session(guid, provider);
+            var session = await Session.Create(guid, provider);
 
             lock (this.sessions)
             {
@@ -20,17 +20,14 @@ namespace LPA.Application.Sessions
 
             TagInvalidator.InvalidateTag(SessionsTag.Instance);
 
-            return Task.FromResult(guid);
+            return guid;
         }
 
-        public async Task<Guid[]> GetAvailableSessionsAsync()
+        public Task<Guid[]> GetAvailableSessionsAsync()
         {
-            // REMOVE THIS. For testing :)
-            await Task.Delay(2000);
-
             lock (this.sessions)
             {
-                return this.sessions.Keys.ToArray();
+                return Task.FromResult(this.sessions.Keys.ToArray());
             }
         }
 
@@ -38,6 +35,11 @@ namespace LPA.Application.Sessions
         {
             lock (this.sessions)
             {
+                if (!this.sessions.ContainsKey(sessionId))
+                {
+                    throw new InvalidOperationException($"A session with the given id {sessionId} does not exist.");
+                }
+
                 return Task.FromResult(this.sessions[sessionId]);
             }
         }

@@ -17,6 +17,6 @@
             }
         }
 
-        public string Name => "AvailableTables";
+        public string Type => "AvailableTables";
     }
 }

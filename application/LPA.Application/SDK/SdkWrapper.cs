@@ -75,14 +75,12 @@ namespace LPA.Application.SDK
                         var info = new EngineCreateInfo(dataSourceSet.AsReadOnly());
 
                         var engine = Engine.Create(info);
+
+                        var currentGuids = this.availableTables.Select(t => t.Guid).ToHashSet();
+                        newTables = engine.AvailableTables.Where(td => !currentGuids.Contains(td.Guid)).Select(table => new SdkTableInfo(table, directory));
+
                         engine.Dispose();
                         dataSourceSet.Dispose();
-
-                        newTables = this.pluginSet
-                            .ProcessingSourceReferences
-                            .Where(psr => !oldProcessingSources.Contains(psr))  // cannot use .Except() since GetHashCode is busted on ProcessingSourceReference
-                            .SelectMany(x => x.AvailableTables
-                                .Select(table => new SdkTableInfo(table, directory)));
 
                         this.loadedDirectories.Add(directory);
                     }
@@ -116,7 +114,7 @@ namespace LPA.Application.SDK
 
             var engine = Engine.Create(info);
 
-            var tables = GetTablesFromGuid(enabledAvailableTables.Select(table => table.Guid));
+            var tables = GetTablesFromGuid(engine, enabledAvailableTables.Select(table => table.Guid));
             foreach (var table in tables)
             {
                 var enabledTable = engine.TryEnableTable(table);
@@ -142,10 +140,9 @@ namespace LPA.Application.SDK
             return Task.FromResult(true);
         }
 
-        private List<TableDescriptor> GetTablesFromGuid(IEnumerable<Guid> guids)
+        private List<TableDescriptor> GetTablesFromGuid(Engine engine, IEnumerable<Guid> guids)
         {
-            var descriptors = this.pluginSet.ProcessingSourceReferences.SelectMany(x => x.AvailableTables);
-            return descriptors.Where(table => guids.Contains(table.Guid)).ToList();
+            return engine.AvailableTables.Where(table => guids.Contains(table.Guid)).ToList();
         }
     }
 }

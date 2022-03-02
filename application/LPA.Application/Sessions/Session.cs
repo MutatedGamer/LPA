@@ -1,37 +1,30 @@
 ﻿using LPA.Application.Sessions.Provider;
+using LPA.Application.Sessions.Tables;
 
 namespace LPA.Application.Sessions
 {
     internal class Session
         : ISession
     {
-        private readonly Guid id;
-
         private readonly ISessionProvider provider;
 
-        private readonly HashSet<Guid> builtTables = new();
+        public Guid Id { get; }
 
-        public Session(Guid id, ISessionProvider provider)
+        public ISessionTablesManager TablesManager { get; private set; }
+
+        private Session(Guid id, ISessionProvider provider, ISessionTablesManager tableManager)
         {
-            this.id = id;
             this.provider = provider;
+            this.Id = id;
+            this.TablesManager = tableManager;
         }
 
-        public Guid Id => this.id;
-
-        public async Task<string[]> GetTableConfigAsync(Guid tableId)
+        internal static async Task<Session> Create(Guid sessionId, ISessionProvider provider)
         {
-            return (await this.provider.GetDefaultConfigColumnsAsync(tableId)).Select(col => col.name).ToArray();
-        }
+            var tableManager = await SessionTablesManager.Create(sessionId, provider);
+            var session = new Session(sessionId, provider, tableManager);
 
-        public Task<string[][]> GetTableDataAsync(Guid tableId)
-        {
-            return this.provider.GetTableDataAsync(tableId);
-        }
-
-        public async Task<Guid[]> GetTablesAsync()
-        {
-            return await this.provider.GetSessionTables();
+            return session;
         }
     }
 }

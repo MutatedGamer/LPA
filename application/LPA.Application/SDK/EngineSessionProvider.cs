@@ -1,6 +1,7 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using LPA.Application.Sessions.Provider;
+using LPA.Application.Sessions.Tables;
+using LPA.Application.Sessions.Tables.TableConfigs;
 using Microsoft.Performance.SDK.Processing;
 using Microsoft.Performance.Toolkit.Engine;
 
@@ -12,107 +13,128 @@ namespace LPA.Application.SDK
         private readonly RuntimeExecutionResults result;
         private readonly ReadOnlyDictionary<Guid, TableDescriptor> tables;
 
-        private readonly ConcurrentDictionary<Guid, ITableResult> builtTables = new();
+        private readonly ReadOnlyDictionary<Guid, Lazy<ITableResult>> builtTables;
+        private readonly ReadOnlyDictionary<Guid, Lazy<ReadOnlyDictionary<Guid, TableConfiguration>>> tableConfigurations;
 
         public EngineSessionProvider(IEnumerable<TableDescriptor> enabledTables, RuntimeExecutionResults result)
         {
             this.result = result;
             this.tables = new ReadOnlyDictionary<Guid, TableDescriptor>(enabledTables.ToDictionary(table => table.Guid, table => table));
+
+            this.builtTables = new ReadOnlyDictionary<Guid, Lazy<ITableResult>>(
+                enabledTables.ToDictionary(
+                    table => table.Guid,
+                    table => new Lazy<ITableResult>(() =>
+                    {
+                        return this.result.BuildTable(this.tables[table.Guid]);
+                    }, LazyThreadSafetyMode.ExecutionAndPublication)));
+
+            this.tableConfigurations = new ReadOnlyDictionary<Guid, Lazy<ReadOnlyDictionary<Guid, TableConfiguration>>>(
+                enabledTables.ToDictionary(
+                    table => table.Guid,
+                    table => new Lazy<ReadOnlyDictionary<Guid, TableConfiguration>>(() =>
+                   {
+                       var configs = new Dictionary<Guid, TableConfiguration>();
+
+                       foreach (var config in table.PrebuiltTableConfigurations)
+                       {
+                           configs.Add(Guid.NewGuid(), config);
+                       }
+
+                       var builtTable = this.builtTables[table.Guid].Value;
+                       foreach (var config in builtTable.BuiltInTableConfigurations)
+                       {
+                           configs.Add(Guid.NewGuid(), config);
+                       }
+
+                       return new ReadOnlyDictionary<Guid, TableConfiguration>(configs);
+                   }, LazyThreadSafetyMode.ExecutionAndPublication)));
         }
 
-        public async Task<(string name, Guid guid)[]> GetDefaultConfigColumnsAsync(Guid tableId)
+        public Task<ITableConfiguration[]> GetConfigurationsAsync(Guid tableId)
         {
-            await BuildIfNecessary(tableId);
-
-            var config = GetConfigToUse(tableId);
-            return config.Columns.Select(column => (column.Metadata.Name, column.Metadata.Guid)).ToArray();
+            var configs = this.tableConfigurations[tableId].Value.Select(kvp => (ITableConfiguration)new SdkTableConfiguration(kvp.Key, kvp.Value));
+            return Task.FromResult(configs.ToArray());
         }
 
-        public async Task<string[][]> GetTableDataAsync(Guid tableId)
+        public Task<ISessionTableInfo> GetTableInfoAsync(Guid tableId)
         {
-            await BuildIfNecessary(tableId);
-
-            if (this.result.IsTableDataAvailable(this.tables[tableId]) == false)
-            {
-                return new string[][] { new string[0] };
-            }
-
-            var table = this.builtTables[tableId];
-
-            var rowCount = table.RowCount;
-            if (rowCount == 0)
-            {
-                return new string[][] { new string[0] };
-            }
-
-            // TODO: pass columns
-            var config = GetConfigToUse(tableId);
-
-            var colGuids = config.Columns.Select(col => col.Metadata.Guid).ToHashSet();
-            var columns = table.Columns.Where(col => colGuids.Contains(col.Configuration.Metadata.Guid)).ToArray();
-
-            var data = new List<string[]>();
-
-            for (int i = 0; i < rowCount; i++)
-            {
-                var row = new List<string>();
-
-                foreach (var column in columns)
-                {
-                    row.Add(column.Project(i)?.ToString());
-                }
-
-                data.Add(row.ToArray());
-            }
-
-            return data.ToArray();
+            var table = this.tables[tableId];
+            return Task.FromResult<ISessionTableInfo>(new SdkTableInfo(table, string.Empty));
         }
+
 
         public Task<Guid[]> GetSessionTables()
         {
             return Task.FromResult(this.tables.Keys.ToArray());
         }
 
-        public async Task IsTableDataAvailable(Guid tableId)
+        public Task<ITableConfiguration> GetConfigurationAsync(Guid tableId, Guid configId)
         {
-            await BuildIfNecessary(tableId);
+            var config = new SdkTableConfiguration(configId, this.tableConfigurations[tableId].Value[configId]);
+            return Task.FromResult<ITableConfiguration>(config);
         }
 
-        private TableConfiguration GetConfigToUse(Guid tableId)
+        public Task<Guid> GetDefaultConfiguration(Guid tableId)
         {
-            if (this.builtTables[tableId].DefaultConfiguration != null)
+            var table = this.tables[tableId];
+
+            if (!string.IsNullOrEmpty(table.PrebuiltTableConfigurations.DefaultConfigurationName))
             {
-                return this.builtTables[tableId].DefaultConfiguration;
-            }
-            else if (this.builtTables[tableId].BuiltInTableConfigurations.Any())
-            {
-                return this.builtTables[tableId].BuiltInTableConfigurations.First();
-            }
-            else
-            {
-                var builtIn = this.tables[tableId].PrebuiltTableConfigurations;
-                var configs = builtIn.Configurations;
-                if (!string.IsNullOrEmpty(builtIn.DefaultConfigurationName))
+                foreach (var kvp in this.tableConfigurations[tableId].Value)
                 {
-                    return configs.First(config => config.Name == builtIn.DefaultConfigurationName);
-                }
-                else
-                {
-                    return configs.First();
+                    if (kvp.Value.Name == table.PrebuiltTableConfigurations.DefaultConfigurationName)
+                    {
+                        return Task.FromResult(kvp.Key);
+                    }
                 }
             }
+
+            var builtTable = this.builtTables[tableId].Value;
+            if (builtTable.DefaultConfiguration != null)
+            {
+                foreach (var kvp in this.tableConfigurations[tableId].Value)
+                {
+                    if (kvp.Value.Name == builtTable.DefaultConfiguration.Name)
+                    {
+                        return Task.FromResult(kvp.Key);
+                    }
+                }
+            }
+
+            return Task.FromResult(this.tableConfigurations[tableId].Value.Keys.First());
         }
 
-        private Task BuildIfNecessary(Guid tableId)
+        public Task<uint> GetRowCountAsync(Guid tableId)
         {
-            if (!this.builtTables.ContainsKey(tableId))
-            {
-                var result = this.result.BuildTable(this.tables[tableId]);
+            return Task.FromResult((uint)this.builtTables[tableId].Value.RowCount);
+        }
 
-                this.builtTables.TryAdd(tableId, result);
+        public Task<string[][]> GetRowsAsync(Guid tableId, IEnumerable<Guid> columns, int start, int count)
+        {
+            var table = this.builtTables[tableId].Value;
+
+            var columnsToUse = columns.Select(columnGuid => table.Columns.FirstOrDefault(col => col.Configuration.Metadata.Guid == columnGuid)).ToList();
+
+            var rows = new List<string[]>(count);
+
+            for (int i = start; i < start + count; i++)
+            {
+                if (i >= table.RowCount)
+                {
+                    break;
+                }
+
+                var row = new List<string>(columnsToUse.Count);
+                foreach (var column in columnsToUse)
+                {
+                    row.Add(column?.Project(i)?.ToString() ?? string.Empty);
+                }
+
+                rows.Add(row.ToArray());
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(rows.ToArray());
         }
     }
 }

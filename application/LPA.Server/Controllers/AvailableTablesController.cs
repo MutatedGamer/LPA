@@ -1,27 +1,32 @@
 ﻿using LPA.Application.AvailableTables;
+using LPA.UI.ResponseObjects.AvailableTables;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LPA.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("availableTables")]
     public class AvailableTablesController : ControllerBase
     {
-
-        private readonly ILogger<AvailableTablesController> logger;
         private readonly IAvailableTablesManager availableTablesManager;
 
-        public AvailableTablesController(ILogger<AvailableTablesController> logger, IAvailableTablesManager pluginLoader)
+        public AvailableTablesController(IAvailableTablesManager pluginLoader)
         {
-            this.logger = logger;
             this.availableTablesManager = pluginLoader;
         }
 
         [HttpGet]
-        public async Task<ActionResult> GetAvailableTables()
+        public async Task<IEnumerable<AvailableTable>> GetAvailableTables()
         {
             var result = await this.availableTablesManager.GetAvailableTablesAsync();
-            return Ok(result);
+            return result.Select(x => new AvailableTable()
+            {
+                Guid = x.Guid,
+                Name = x.Name,
+                PluginDirectory = x.PluginDirectory,
+                Description = x.Description,
+                Category = x.Category,
+            });
         }
     }
 }

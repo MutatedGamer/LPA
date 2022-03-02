@@ -1,43 +1,93 @@
-﻿using System.Collections.Concurrent;
+﻿using LPA.Application.AvailableTables;
+using LPA.Application.SDK;
 
 namespace LPA.Application.EnabledTables
 {
     internal class EnabledTablesManager
         : IEnabledTablesManager
     {
-        private readonly ConcurrentDictionary<Guid, bool> tableEnablement = new ConcurrentDictionary<Guid, bool>();
+        private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
+        private readonly Dictionary<Guid, bool> tableEnablement = new Dictionary<Guid, bool>();
+
+        public EnabledTablesManager(IAvailableTablesManager availableTablesManager, ISdk sdk)
+        {
+            sdk.PluginLoaded += Sdk_PluginLoaded;
+
+            this.rwLock.EnterWriteLock();
+            foreach (var availableTable in availableTablesManager.GetAvailableTablesAsync().Result)
+            {
+                this.tableEnablement.TryAdd(availableTable.Guid, true);
+            }
+            this.rwLock.ExitWriteLock();
+        }
+
+        private void Sdk_PluginLoaded(object? sender, PluginLoading.PluginLoadedEventArgs e)
+        {
+            this.rwLock.EnterWriteLock();
+            foreach (var availableTable in e.Tables)
+            {
+                this.tableEnablement.TryAdd(availableTable.Guid, true);
+            }
+            this.rwLock.ExitWriteLock();
+        }
 
         public Task<bool> IsEnabledAsync(Guid tableGuid)
         {
-            AddGuidIfMissing(tableGuid);
+            var value = GetOrAddTableGuid(tableGuid);
 
-            return Task.FromResult(this.tableEnablement[tableGuid]);
+            return Task.FromResult(value);
         }
 
         public Task ToggleEnabledAsync(Guid tableGuid)
         {
-            AddGuidIfMissing(tableGuid);
+            var value = GetOrAddTableGuid(tableGuid);
 
-            this.tableEnablement[tableGuid] = !this.tableEnablement[tableGuid];
+            this.rwLock.EnterWriteLock();
+            this.tableEnablement[tableGuid] = !value;
+            this.rwLock.ExitWriteLock();
 
             return Task.CompletedTask;
         }
 
         public Task DisableAll()
         {
+            this.rwLock.EnterWriteLock();
             foreach (var table in this.tableEnablement.Keys)
             {
                 this.tableEnablement[table] = false;
             }
+            this.rwLock.ExitWriteLock();
 
             return Task.CompletedTask;
         }
 
-        private void AddGuidIfMissing(Guid tableGuid)
+        private bool GetOrAddTableGuid(Guid tableGuid)
         {
-            if (!this.tableEnablement.ContainsKey(tableGuid))
+            this.rwLock.EnterReadLock();
+            var exists = this.tableEnablement.TryGetValue(tableGuid, out var result);
+            this.rwLock.ExitReadLock();
+
+            if (exists)
             {
-                this.tableEnablement.TryAdd(tableGuid, true);
+                return result;
+            }
+            else
+            {
+                bool addResult;
+
+                this.rwLock.EnterWriteLock();
+                if (this.tableEnablement.ContainsKey(tableGuid))
+                {
+                    addResult = this.tableEnablement[tableGuid];
+                }
+                else
+                {
+                    this.tableEnablement.Add(tableGuid, true);
+                    addResult = true;
+                }
+                this.rwLock.ExitWriteLock();
+
+                return addResult;
             }
         }
     }

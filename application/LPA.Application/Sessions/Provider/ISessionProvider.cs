@@ -1,13 +1,22 @@
-﻿namespace LPA.Application.Sessions.Provider
+﻿using LPA.Application.Sessions.Tables;
+using LPA.Application.Sessions.Tables.TableConfigs;
+
+namespace LPA.Application.Sessions.Provider
 {
     public interface ISessionProvider
     {
-        Task<(string name, Guid guid)[]> GetDefaultConfigColumnsAsync(Guid tableId);
-
-        Task<string[][]> GetTableDataAsync(Guid tableId);
-
-        Task IsTableDataAvailable(Guid tableGuid);
-
         Task<Guid[]> GetSessionTables();
+
+        Task<ISessionTableInfo> GetTableInfoAsync(Guid tableId);
+
+        Task<ITableConfiguration[]> GetConfigurationsAsync(Guid tableId);
+
+        Task<ITableConfiguration> GetConfigurationAsync(Guid tableId, Guid configId);
+
+        Task<Guid> GetDefaultConfiguration(Guid tableId);
+
+        Task<uint> GetRowCountAsync(Guid tableId);
+
+        Task<string[][]> GetRowsAsync(Guid tableId, IEnumerable<Guid> columns, int start, int count);
     }
 }

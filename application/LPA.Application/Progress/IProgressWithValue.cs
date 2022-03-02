@@ -3,6 +3,6 @@
     public interface IProgressWithValue
         : IProgress
     {
-        void SetValue(int newValue);
+        float Value { get; set; }
     }
 }

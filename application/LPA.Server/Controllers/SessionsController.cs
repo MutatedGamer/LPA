@@ -4,24 +4,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace LPA.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("sessions")]
     public class SessionsController : ControllerBase
     {
 
-        private readonly ILogger<SessionsController> logger;
         private readonly ISessionsManager sessionsManager;
 
-        public SessionsController(ILogger<SessionsController> logger, ISessionsManager sessionsManager)
+        public SessionsController(ISessionsManager sessionsManager)
         {
-            this.logger = logger;
             this.sessionsManager = sessionsManager;
         }
 
         [HttpGet]
-        public async Task<ActionResult> GetSessions()
+        public async Task<IEnumerable<Guid>> GetSessions()
         {
-            var result = await this.sessionsManager.GetAvailableSessionsAsync();
-            return Ok(result);
+            return await this.sessionsManager.GetAvailableSessionsAsync();
         }
     }
 }

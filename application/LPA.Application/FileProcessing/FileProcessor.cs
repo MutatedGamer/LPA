@@ -1,5 +1,6 @@
 ﻿using LPA.Application.AvailableTables;
 using LPA.Application.EnabledTables;
+using LPA.Application.Progress;
 using LPA.Application.SDK;
 using LPA.Common;
 
@@ -11,12 +12,14 @@ namespace LPA.Application.FileProcessing
         private readonly IUserInput userInput;
         private readonly ISdk sdk;
         private readonly IEnabledTablesManager enabledTablesManager;
+        private readonly IProgressManager progressManager;
 
-        public FileProcessor(ISdk sdk, IEnabledTablesManager enabledTablesManager, IUserInput userInput)
+        public FileProcessor(ISdk sdk, IEnabledTablesManager enabledTablesManager, IUserInput userInput, IProgressManager progressManager)
         {
             this.sdk = sdk;
             this.enabledTablesManager = enabledTablesManager;
             this.userInput = userInput;
+            this.progressManager = progressManager;
         }
 
         public async Task ProcessFile()
@@ -26,6 +29,12 @@ namespace LPA.Application.FileProcessing
             {
                 return;
             }
+
+            var progress = this.progressManager.CreateIndefiniteProgress();
+            await progress.Start("Processing...", "Cancel");
+
+            // TODO: don't do this - for demo only
+            await Task.Delay(2000);
 
             var availableTables = this.sdk.AvailableTables;
             List<IAvailableTable> enabledAvailableTables = new List<IAvailableTable>();
@@ -44,6 +53,8 @@ namespace LPA.Application.FileProcessing
             });
 
             await this.sdk.ProcessFile(file, enabledAvailableTables);
+
+            await progress.Finish();
         }
     }
 }

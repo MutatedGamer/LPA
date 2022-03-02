@@ -1,10 +1,12 @@
 ﻿using LPA.Application.AvailableTables;
+using LPA.Application.Sessions.Tables;
 using Microsoft.Performance.SDK.Processing;
 
 namespace LPA.Application.SDK
 {
     internal record class SdkTableInfo
-        : IAvailableTable
+        : IAvailableTable,
+          ISessionTableInfo
     {
         public Guid Guid { get; }
 
