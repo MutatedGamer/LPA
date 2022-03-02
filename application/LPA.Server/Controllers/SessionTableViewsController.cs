@@ -63,7 +63,7 @@ namespace LPA.Controllers
         }
 
         [HttpGet("rowCount")]
-        public async Task<ActionResult<uint>> GetRowCount(Guid sessionId, Guid sessionTableId, Guid viewId)
+        public async Task<ActionResult<int>> GetRowCount(Guid sessionId, Guid sessionTableId, Guid viewId)
         {
             var view = await this.sessionsManager.GetSessionTableView(sessionId, sessionTableId, viewId);
 
@@ -77,6 +77,14 @@ namespace LPA.Controllers
             var view = await this.sessionsManager.GetSessionTableView(sessionId, sessionTableId, viewId);
 
             return Ok(await view.GetRowsAsync(start, count));
+        }
+
+        [HttpPost("exportCsv")]
+        public async Task<IActionResult> ExportCsv(Guid sessionId, Guid sessionTableId, Guid viewId)
+        {
+            var view = await this.sessionsManager.GetSessionTableView(sessionId, sessionTableId, viewId);
+            await view.ExportCsvAsync();
+            return Ok();
         }
     }
 }

@@ -10,10 +10,12 @@ namespace LPA.Application.Sessions.Tables.View
 
         Task<Guid> GetCurrentConfigurationIdAsync();
 
-        Task<uint> GetRowCountAsync();
+        Task<int> GetRowCountAsync();
 
         Task<IEnumerable<IColumn>> GetColumnsAsync();
 
         Task<string[][]> GetRowsAsync(int start, int count);
+
+        Task ExportCsvAsync();
     }
 }

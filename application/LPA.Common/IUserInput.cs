@@ -7,5 +7,7 @@
         Task<string?> GetFile();
 
         Task<string?> GetFile((string name, string[] filters)[]? fileTypeFilters);
+
+        Task<string?> GetSaveAsFile((string name, string[] filters)[]? fileTypeFilters);
     }
 }

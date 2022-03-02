@@ -12,6 +12,16 @@ namespace LPA.UI.UserInput
             return GetFile(null);
         }
 
+        public async Task<string?> GetSaveAsFile((string name, string[] filters)[]? fileTypeFilters)
+        {
+            var result = await Electron.Dialog.ShowSaveDialogAsync(Electron.WindowManager.BrowserWindows.First(), new SaveDialogOptions()
+            {
+                Filters = fileTypeFilters?.Select(filter => new FileFilter() { Name = filter.name, Extensions = filter.filters }).ToArray(),
+            });
+
+            return result;
+        }
+
         public async Task<string?> GetFile((string name, string[] filters)[]? fileTypeFilters)
         {
             var result = await Electron.Dialog.ShowOpenDialogAsync(Electron.WindowManager.BrowserWindows.First(), new OpenDialogOptions()

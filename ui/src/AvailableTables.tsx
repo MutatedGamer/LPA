@@ -17,7 +17,8 @@ import {
   ListItemIcon,
   ListItemText,
   Typography,
-  Button
+  Button,
+  CircularProgress
 } from "@mui/material";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { groupBy } from "./utils/arrayUtils";
@@ -55,15 +56,23 @@ const AvailableTablesGroupItem: React.FC<{ table: AvailableTable }> = (
         wordWrap: "normal",
         wordBreak: "normal"
       }}
-      onClick={() => toggleEnablement(props.table.guid)}
+      onClick={() => {
+        if (!isEnabledResponse.isFetching) {
+          toggleEnablement(props.table.guid);
+        }
+      }}
     >
       <ListItemIcon>
-        <Checkbox
-          edge="start"
-          tabIndex={-1}
-          disableRipple
-          checked={isEnabledResponse.data || false}
-        />
+        {isEnabledResponse.isFetching ? (
+          <CircularProgress size={"1rem"} />
+        ) : (
+          <Checkbox
+            edge="start"
+            tabIndex={-1}
+            disableRipple
+            checked={isEnabledResponse.data || false}
+          />
+        )}
       </ListItemIcon>
       <ListItemText
         primary={props.table.name}
@@ -90,7 +99,7 @@ const AvailableTablesGroup: React.FC<{
         {open ? <ExpandLess /> : <ExpandMore />}
       </ListItemButton>
       <Divider variant="fullWidth" component="li" />
-      <Collapse in={open} timeout="auto">
+      <Collapse in={open} timeout={250}>
         <List component="div" disablePadding>
           {props.tables.map((table, index) => {
             return <AvailableTablesGroupItem key={table.guid} table={table} />;
@@ -106,14 +115,9 @@ export const AvailableTables = () => {
 
   const [disableAll] = useDisableAllTablesMutation();
 
-  if (availableTablesResponse.data === undefined) {
-    return <div>"Error"</div>;
-  }
+  const data = availableTablesResponse.data || [];
 
-  const tablesByCategory = groupBy(
-    availableTablesResponse.data,
-    (table) => table.category
-  );
+  const tablesByCategory = groupBy(data, (table) => table.category);
 
   return (
     <View
@@ -122,7 +126,7 @@ export const AvailableTables = () => {
         availableTablesResponse.isLoading || availableTablesResponse.isFetching
       }
     >
-      {availableTablesResponse.data.length === 0 ? (
+      {data.length === 0 ? (
         <NoTablesLoaded />
       ) : (
         <>

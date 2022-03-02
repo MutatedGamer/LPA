@@ -1,4 +1,6 @@
-﻿using LPA.Application.Sessions.Provider;
+﻿using LPA.Application.Progress;
+using LPA.Application.Sessions.Provider;
+using LPA.Common;
 
 namespace LPA.Application.Sessions.Tables
 {
@@ -16,13 +18,17 @@ namespace LPA.Application.Sessions.Tables
             this.provider = provider;
         }
 
-        internal static async Task<ISessionTablesManager> Create(Guid sessionId, ISessionProvider provider)
+        internal static async Task<ISessionTablesManager> Create(
+            Guid sessionId,
+            ISessionProvider provider,
+            IUserInput userInput,
+            IProgressManager progressManager)
         {
             var manager = new SessionTablesManager(sessionId, provider);
 
             foreach (var tableId in await provider.GetSessionTables())
             {
-                var sessionTable = SessionTable.Create(sessionId, tableId, provider);
+                var sessionTable = SessionTable.Create(sessionId, tableId, provider, userInput, progressManager);
                 manager.sessionTables.Add(tableId, sessionTable);
 
                 // TODO: don't do this.

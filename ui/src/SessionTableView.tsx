@@ -8,13 +8,20 @@ import {
   Toolbar,
   Typography,
   Button,
-  IconButton
+  IconButton,
+  Popover,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { DataGrid, GridColDef, GridValueGetterParams } from "@mui/x-data-grid";
 import SessionTableConfigDropdown from "./SessionTableConfigDropdown";
 import {
   useCloseSessionTableViewMutation,
+  useExportSessionTableViewCsvMutation,
   useGetSessionTableInfoQuery,
   useGetSessionTableViewColumnsQuery,
   useGetSessionTableViewRowCountQuery,
@@ -35,6 +42,62 @@ interface SessionTableViewProps {
   tableId: string;
   tableViewId: string;
 }
+
+const TableViewPopover: React.FC<SessionTableViewProps> = (props) => {
+  const args = {
+    sessionId: props.sessionId,
+    tableId: props.tableId,
+    viewId: props.tableViewId
+  };
+
+  const [exportCsv] = useExportSessionTableViewCsvMutation();
+
+  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(
+    null
+  );
+
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleExportClick = () => {
+    handleClose();
+    exportCsv(args);
+  };
+
+  const open = Boolean(anchorEl);
+  const id = open ? "simple-popover" : undefined;
+
+  return (
+    <div>
+      <IconButton edge="end" size="small" color="inherit" onClick={handleClick}>
+        <MoreHorizIcon />
+      </IconButton>
+      <Popover
+        id={id}
+        open={open}
+        anchorEl={anchorEl}
+        onClose={handleClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "left"
+        }}
+      >
+        <List>
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleExportClick}>
+              <ListItemText primary="Export to CSV" />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Popover>
+    </div>
+  );
+};
 
 const SessionTableView: React.FC<SessionTableViewProps> = (props) => {
   const args = {
@@ -103,9 +166,8 @@ const SessionTableView: React.FC<SessionTableViewProps> = (props) => {
 
   return (
     <Resizable
-      className="item"
+      className="session-view-container"
       height={400}
-      width="100%"
       style={{ width: "100%" }}
       bounds={"parent"}
       enable={{
@@ -146,6 +208,7 @@ const SessionTableView: React.FC<SessionTableViewProps> = (props) => {
                 tableId={props.tableId}
                 tableViewId={props.tableViewId}
               />
+              <TableViewPopover {...props} />
               <Box sx={{ flexGrow: 1 }}></Box>
               <IconButton
                 edge="end"

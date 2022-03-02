@@ -151,6 +151,12 @@ export const applicationApi = createApi({
       providesTags: (result, error, arg) => [{ type: 'SessionTableViewData', id: arg.viewId }]
     }),
 
+    // Session Table View Actions
+
+    exportSessionTableViewCsv: builder.mutation <void, {sessionId: string, tableId: string, viewId: string}>({
+      query: (args) => ({ url: `sessions/${args.sessionId}/sessionTables/${args.tableId}/views/${args.viewId}/exportCsv`, method: 'POST' }),
+    }),
+
     // Progress
     getProgressState: builder.query<ProgressState, string>({
       query: (id) => `progress/${id}`,
@@ -179,6 +185,7 @@ export const {
   useGetSessionTableViewColumnsQuery,
   useGetSessionTableViewRowCountQuery,
   useLazyGetSessionTableViewRowsQuery,
+  useExportSessionTableViewCsvMutation,
   useGetProgressStateQuery,
   useCancelProgressMutation
 } = applicationApi;

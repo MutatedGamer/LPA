@@ -15,7 +15,7 @@ namespace LPA.Application.Sessions.Provider
 
         Task<Guid> GetDefaultConfiguration(Guid tableId);
 
-        Task<uint> GetRowCountAsync(Guid tableId);
+        Task<int> GetRowCountAsync(Guid tableId);
 
         Task<string[][]> GetRowsAsync(Guid tableId, IEnumerable<Guid> columns, int start, int count);
     }

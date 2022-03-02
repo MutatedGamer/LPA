@@ -105,9 +105,9 @@ namespace LPA.Application.SDK
             return Task.FromResult(this.tableConfigurations[tableId].Value.Keys.First());
         }
 
-        public Task<uint> GetRowCountAsync(Guid tableId)
+        public Task<int> GetRowCountAsync(Guid tableId)
         {
-            return Task.FromResult((uint)this.builtTables[tableId].Value.RowCount);
+            return Task.FromResult(this.builtTables[tableId].Value.RowCount);
         }
 
         public Task<string[][]> GetRowsAsync(Guid tableId, IEnumerable<Guid> columns, int start, int count)

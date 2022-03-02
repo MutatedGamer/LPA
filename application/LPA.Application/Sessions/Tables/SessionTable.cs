@@ -1,6 +1,8 @@
-﻿using LPA.Application.Sessions.Provider;
+﻿using LPA.Application.Progress;
+using LPA.Application.Sessions.Provider;
 using LPA.Application.Sessions.Tables.TableConfigs;
 using LPA.Application.Sessions.Tables.View;
+using LPA.Common;
 using LPA.UI.Tags;
 
 namespace LPA.Application.Sessions.Tables
@@ -15,22 +17,37 @@ namespace LPA.Application.Sessions.Tables
         private readonly ISessionProvider provider;
 
         private readonly Dictionary<Guid, ISessionTableView> views = new();
+        private readonly IUserInput userInput;
+        private readonly IProgressManager progressManager;
 
-        private SessionTable(Guid sessionId, Guid sessionTableId, ISessionProvider provider, ISessionTableConfigurationsManager configurationsManager)
+        private SessionTable(
+            Guid sessionId,
+            Guid sessionTableId,
+            ISessionProvider provider,
+            ISessionTableConfigurationsManager configurationsManager,
+            IUserInput userInput,
+            IProgressManager progressManager)
         {
             this.sessionId = sessionId;
             this.sessionTableViewsTag = new SessionTableViewsTag(sessionId);
             this.sessionTableId = sessionTableId;
             this.provider = provider;
             this.ConfigurationsManager = configurationsManager;
+            this.userInput = userInput;
+            this.progressManager = progressManager;
         }
 
         public ISessionTableConfigurationsManager ConfigurationsManager { get; private set; }
 
-        internal static ISessionTable Create(Guid sessionId, Guid tableId, ISessionProvider provider)
+        internal static ISessionTable Create(
+            Guid sessionId,
+            Guid tableId,
+            ISessionProvider provider,
+            IUserInput userInput,
+            IProgressManager progressManager)
         {
             var configManager = SessionTableConfigurationsManager.Create(tableId, provider);
-            return new SessionTable(sessionId, tableId, provider, configManager);
+            return new SessionTable(sessionId, tableId, provider, configManager, userInput, progressManager);
         }
 
         public async Task<ISessionTableInfo> GetTableInfoAsync()
@@ -46,7 +63,7 @@ namespace LPA.Application.Sessions.Tables
         public async Task<Guid> CreateViewAsync(Guid configId)
         {
             var guid = Guid.NewGuid();
-            var view = await SessionTableView.Create(guid, this.sessionTableId, configId, this.ConfigurationsManager, this.provider);
+            var view = await SessionTableView.Create(guid, this.sessionTableId, configId, this.ConfigurationsManager, this.provider, this.userInput, this.progressManager);
 
             lock (this.views)
             {
