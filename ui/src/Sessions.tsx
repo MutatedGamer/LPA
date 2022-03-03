@@ -1,8 +1,22 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Box, Tab, Tabs, Typography } from "@mui/material";
 import View from "./containers/View";
 import { useGetSessionsQuery } from "./services/application";
 import Session from "./Session";
+
+function usePrevious<T>(value: T) {
+  // The ref object is a generic container whose current property is mutable ...
+  // ... and can hold any value, similar to an instance property on a class
+  const ref = useRef<T>();
+
+  // Store current value in ref
+  useEffect(() => {
+    ref.current = value;
+  }, [value]); // Only re-run if value changes
+
+  // Return previous value (happens before update in useEffect above)
+  return ref.current;
+}
 
 const NoSessions = () => {
   return (
@@ -66,6 +80,14 @@ const SessionTabs: React.FC<{ sessions: string[] }> = (props) => {
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
+
+  const previousSessions = usePrevious(props.sessions);
+
+  useEffect(() => {
+    if (props.sessions.length > (previousSessions?.length || 0)) {
+      setValue(props.sessions.length - 1);
+    }
+  }, [props.sessions]);
 
   return (
     <Box sx={{ width: "100%" }}>

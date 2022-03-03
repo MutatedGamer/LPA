@@ -100,5 +100,10 @@ namespace LPA.Application.Sessions.Tables
                 return Task.FromResult(this.views.Values.AsEnumerable());
             }
         }
+
+        public async Task<bool> BuiltWithoutErrors()
+        {
+            return await this.provider.BuiltWithoutErrors(this.sessionTableId);
+        }
     }
 }

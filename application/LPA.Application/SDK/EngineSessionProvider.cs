@@ -69,6 +69,11 @@ namespace LPA.Application.SDK
                    }, LazyThreadSafetyMode.ExecutionAndPublication)));
         }
 
+        public Task<bool> BuiltWithoutErrors(Guid tableId)
+        {
+            return Task.FromResult(this.builtTables[tableId].Value != null);
+        }
+
         public Task<ITableConfiguration[]> GetConfigurationsAsync(Guid tableId)
         {
             var configs = this.tableConfigurations[tableId].Value;

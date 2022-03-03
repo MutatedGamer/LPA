@@ -23,7 +23,7 @@ const View: FC<{ title: string; loading: boolean }> = (props) => {
         position: "relative"
       }}
     >
-      <Backdrop open={props.loading} sx={{ position: "absolute" }}>
+      <Backdrop open={props.loading} sx={{ position: "absolute", zIndex: 99 }}>
         <CircularProgress color="inherit" />
       </Backdrop>
       <AppBar position="relative">

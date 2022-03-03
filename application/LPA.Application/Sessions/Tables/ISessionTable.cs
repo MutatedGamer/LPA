@@ -18,5 +18,7 @@ namespace LPA.Application.Sessions.Tables
         Task<ISessionTableView> GetTableViewAsync(Guid viewId);
 
         Task<IEnumerable<ISessionTableView>> GetViewsAsync();
+
+        Task<bool> BuiltWithoutErrors();
     }
 }

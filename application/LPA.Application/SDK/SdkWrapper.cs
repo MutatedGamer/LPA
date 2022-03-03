@@ -118,15 +118,6 @@ namespace LPA.Application.SDK
             foreach (var table in tables)
             {
                 var enabledTable = engine.TryEnableTable(table);
-
-                if (enabledTable)
-                {
-                    foreach (var cooker in table.RequiredDataCookers)
-                    {
-                        engine.TryEnableCooker(cooker);
-                    }
-
-                }
             }
 
             if (!engine.EnabledTables.Any())

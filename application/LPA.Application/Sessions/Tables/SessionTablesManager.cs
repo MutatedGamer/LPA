@@ -34,7 +34,10 @@ namespace LPA.Application.Sessions.Tables
                 // TODO: don't do this.
                 try
                 {
-                    await sessionTable.CreateViewAsync();
+                    if (await sessionTable.BuiltWithoutErrors())
+                    {
+                        await sessionTable.CreateViewAsync();
+                    }
                 }
                 catch
                 {
