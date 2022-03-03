@@ -11,7 +11,7 @@ namespace LPA.Application.Sessions.Provider
 
         Task<ITableConfiguration[]> GetConfigurationsAsync(Guid tableId);
 
-        Task<ITableConfiguration> GetConfigurationAsync(Guid tableId, Guid configId);
+        Task<ITableConfiguration?> GetConfigurationAsync(Guid tableId, Guid configId);
 
         Task<Guid> GetDefaultConfiguration(Guid tableId);
 

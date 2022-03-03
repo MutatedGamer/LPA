@@ -13,7 +13,7 @@ namespace LPA.Application.SDK
         private readonly RuntimeExecutionResults result;
         private readonly ReadOnlyDictionary<Guid, TableDescriptor> tables;
 
-        private readonly ReadOnlyDictionary<Guid, Lazy<ITableResult>> builtTables;
+        private readonly ReadOnlyDictionary<Guid, Lazy<ITableResult?>> builtTables;
         private readonly ReadOnlyDictionary<Guid, Lazy<ReadOnlyDictionary<Guid, TableConfiguration>>> tableConfigurations;
 
         public EngineSessionProvider(IEnumerable<TableDescriptor> enabledTables, RuntimeExecutionResults result)
@@ -21,12 +21,19 @@ namespace LPA.Application.SDK
             this.result = result;
             this.tables = new ReadOnlyDictionary<Guid, TableDescriptor>(enabledTables.ToDictionary(table => table.Guid, table => table));
 
-            this.builtTables = new ReadOnlyDictionary<Guid, Lazy<ITableResult>>(
+            this.builtTables = new ReadOnlyDictionary<Guid, Lazy<ITableResult?>>(
                 enabledTables.ToDictionary(
                     table => table.Guid,
-                    table => new Lazy<ITableResult>(() =>
+                    table => new Lazy<ITableResult?>(() =>
                     {
-                        return this.result.BuildTable(this.tables[table.Guid]);
+                        try
+                        {
+                            return this.result.BuildTable(this.tables[table.Guid]);
+                        }
+                        catch
+                        {
+                            return null;
+                        }
                     }, LazyThreadSafetyMode.ExecutionAndPublication)));
 
             this.tableConfigurations = new ReadOnlyDictionary<Guid, Lazy<ReadOnlyDictionary<Guid, TableConfiguration>>>(
@@ -42,9 +49,20 @@ namespace LPA.Application.SDK
                        }
 
                        var builtTable = this.builtTables[table.Guid].Value;
-                       foreach (var config in builtTable.BuiltInTableConfigurations)
+
+                       if (builtTable != null)
                        {
-                           configs.Add(Guid.NewGuid(), config);
+                           if (builtTable.BuiltInTableConfigurations.Any())
+                           {
+                               foreach (var config in builtTable.BuiltInTableConfigurations)
+                               {
+                                   configs.Add(Guid.NewGuid(), config);
+                               }
+                           }
+                           else
+                           {
+                               // TODO: create a config with all columns
+                           }
                        }
 
                        return new ReadOnlyDictionary<Guid, TableConfiguration>(configs);
@@ -53,8 +71,10 @@ namespace LPA.Application.SDK
 
         public Task<ITableConfiguration[]> GetConfigurationsAsync(Guid tableId)
         {
-            var configs = this.tableConfigurations[tableId].Value.Select(kvp => (ITableConfiguration)new SdkTableConfiguration(kvp.Key, kvp.Value));
-            return Task.FromResult(configs.ToArray());
+            var configs = this.tableConfigurations[tableId].Value;
+
+            var sdkTableConfigs = configs.Select(kvp => (ITableConfiguration)new SdkTableConfiguration(kvp.Key, kvp.Value));
+            return Task.FromResult(sdkTableConfigs.ToArray());
         }
 
         public Task<ISessionTableInfo> GetTableInfoAsync(Guid tableId)
@@ -69,10 +89,18 @@ namespace LPA.Application.SDK
             return Task.FromResult(this.tables.Keys.ToArray());
         }
 
-        public Task<ITableConfiguration> GetConfigurationAsync(Guid tableId, Guid configId)
+        public Task<ITableConfiguration?> GetConfigurationAsync(Guid tableId, Guid configId)
         {
-            var config = new SdkTableConfiguration(configId, this.tableConfigurations[tableId].Value[configId]);
-            return Task.FromResult<ITableConfiguration>(config);
+            var configs = this.tableConfigurations[tableId].Value;
+            if (configs.TryGetValue(configId, out var tableConfiguration))
+            {
+                var config = new SdkTableConfiguration(configId, tableConfiguration);
+                return Task.FromResult<ITableConfiguration?>(config);
+            }
+            else
+            {
+                return Task.FromResult<ITableConfiguration?>(null);
+            }
         }
 
         public Task<Guid> GetDefaultConfiguration(Guid tableId)
@@ -91,7 +119,7 @@ namespace LPA.Application.SDK
             }
 
             var builtTable = this.builtTables[tableId].Value;
-            if (builtTable.DefaultConfiguration != null)
+            if (builtTable?.DefaultConfiguration != null)
             {
                 foreach (var kvp in this.tableConfigurations[tableId].Value)
                 {
@@ -102,17 +130,30 @@ namespace LPA.Application.SDK
                 }
             }
 
-            return Task.FromResult(this.tableConfigurations[tableId].Value.Keys.First());
+            var configs = this.tableConfigurations[tableId].Value;
+            if (configs.Any())
+            {
+                return Task.FromResult(configs.Keys.First());
+            }
+            else
+            {
+                return Task.FromResult(Guid.Empty);
+            }
         }
 
         public Task<int> GetRowCountAsync(Guid tableId)
         {
-            return Task.FromResult(this.builtTables[tableId].Value.RowCount);
+            return Task.FromResult(this.builtTables[tableId].Value?.RowCount ?? 0);
         }
 
         public Task<string[][]> GetRowsAsync(Guid tableId, IEnumerable<Guid> columns, int start, int count)
         {
             var table = this.builtTables[tableId].Value;
+
+            if (table == null)
+            {
+                return Task.FromResult(new string[1][] { new string[0] });
+            }
 
             var columnsToUse = columns.Select(columnGuid => table.Columns.FirstOrDefault(col => col.Configuration.Metadata.Guid == columnGuid)).ToList();
 

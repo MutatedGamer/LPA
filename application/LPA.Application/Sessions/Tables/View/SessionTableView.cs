@@ -150,7 +150,7 @@ namespace LPA.Application.Sessions.Tables.View
 
         private IEnumerable<IColumn> GetVisibleColumns()
         {
-            return this.currentConfig.Columns.Where(col => col.IsVisible);
+            return this.currentConfig?.Columns?.Where(col => col.IsVisible) ?? new IColumn[0];
         }
 
         private static string[] MakeValuesCsvFriendly(object[] values, string columnSeparator = ",")

@@ -100,11 +100,11 @@ namespace LPA.Application.SDK
             });
         }
 
-        public Task<bool> ProcessFile(string file, IEnumerable<IAvailableTable> enabledAvailableTables)
+        public async Task<bool> ProcessFile(string file, IEnumerable<IAvailableTable> enabledAvailableTables)
         {
             if (this.pluginSet == null)
             {
-                return Task.FromResult(false);
+                return false;
             }
 
             using var dataSourceSet = DataSourceSet.Create(this.pluginSet, false);
@@ -131,13 +131,13 @@ namespace LPA.Application.SDK
 
             if (!engine.EnabledTables.Any())
             {
-                return Task.FromResult(false);
+                return false;
             }
 
             var result = engine.Process();
-            this.sessionsManager.CreateSessionAsync(new EngineSessionProvider(engine.EnabledTables, result));
+            await this.sessionsManager.CreateSessionAsync(new EngineSessionProvider(engine.EnabledTables, result));
 
-            return Task.FromResult(true);
+            return true;
         }
 
         private List<TableDescriptor> GetTablesFromGuid(Engine engine, IEnumerable<Guid> guids)

@@ -5,7 +5,9 @@ import {
   InputLabel,
   FormControl,
   SelectChangeEvent,
-  Typography
+  Typography,
+  CircularProgress,
+  Box
 } from "@mui/material";
 import {
   useGetSessionTableConfigsQuery,
@@ -56,7 +58,7 @@ const SessionTableConfigDropdown: React.FC<SessionTableConfigDropdownProps> = (
             component="span"
             sx={{ ml: 0, pl: 0 }}
           >
-            {configs.data?.find((val) => val.id == value)!.name}
+            {configs.data?.find((val) => val.id == value)?.name || "ERROR"}
           </Typography>
         );
       }}
@@ -64,9 +66,23 @@ const SessionTableConfigDropdown: React.FC<SessionTableConfigDropdownProps> = (
       value={currentConfig.data || ""}
       onChange={handleChange}
     >
-      {(configs.data || []).map((config) => {
-        return <MenuItem value={config.id}>{config.name}</MenuItem>;
-      })}
+      {configs.isFetching ? (
+        <Box sx={{ paddingLeft: "25px", paddingRight: "25px" }}>
+          <CircularProgress size={"20px"} />
+        </Box>
+      ) : configs.data === undefined ? (
+        <Box sx={{ paddingLeft: "25px", paddingRight: "25px" }}>
+          {"Error loading configs."}
+        </Box>
+      ) : configs.data.length === 0 ? (
+        <Box sx={{ paddingLeft: "25px", paddingRight: "25px" }}>
+          {"No configs found."}
+        </Box>
+      ) : (
+        (configs.data || []).map((config) => {
+          return <MenuItem value={config.id}>{config.name}</MenuItem>;
+        })
+      )}
     </Select>
   );
 };

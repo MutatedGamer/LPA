@@ -32,7 +32,14 @@ namespace LPA.Application.Sessions.Tables
                 manager.sessionTables.Add(tableId, sessionTable);
 
                 // TODO: don't do this.
-                await sessionTable.CreateViewAsync();
+                try
+                {
+                    await sessionTable.CreateViewAsync();
+                }
+                catch
+                {
+                    continue;
+                }
             }
 
             return manager;

@@ -52,6 +52,7 @@ namespace LPA.Application.FileProcessing
                 }
             });
 
+            // TODO: do somethng with this result
             await this.sdk.ProcessFile(file, enabledAvailableTables);
 
             await progress.Finish();
